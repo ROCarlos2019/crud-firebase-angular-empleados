@@ -1,55 +1,82 @@
 import { Injectable } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireStorage } from '@angular/fire/storage';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { FileI } from '../models/file.interface';
-import { PostI } from '../models/post.interface';
-
-
 
 @Injectable({
   providedIn: 'root'
 })
 export class EmpleadoService {
 
-  private postsCollection: AngularFirestoreCollection<any>;
+  /** Variable para obtener el path de la ruta relativa en Storage de Firebase */
   private filePath: any;
+  /** Variable para almacenar URL image.*/
   private downloadURL: Observable<string> | undefined;
 
+  /**
+   * Creates an instance of EmpleadoService.
+   * @param {AngularFirestore} firestore
+   * @param {AngularFireStorage} storage
+   * @memberof EmpleadoService
+   */
   constructor(private firestore: AngularFirestore,
     private storage: AngularFireStorage) {
-    this.postsCollection = firestore.collection<any>('empleados');
-
   }
 
-  private _savePostEmpleado(empleado: any) {
-    const postObj = {
-      // titlePost: 'empleado.titlePost',
-      // contentPost: 'empleado.contentPost',
-      imagePost: this.downloadURL,
-      fileRef: this.filePath,
-      // tagsPost: 'empleado.tagsPost'
-    };
-    return this.postsCollection.add(postObj);
-  }
-
+  /**
+   * Metodo Publico tipo Promesa consumo servicio
+   * agregar los datos del empleado a nuestra collection en Firebase.
+   *
+   * @param {*} empleado
+   * @return {*}  {Promise<any>}
+   * @memberof EmpleadoService
+   */
   public agregarEmpleado(empleado: any): Promise<any> {
     return this.firestore.collection('empleados').add(empleado);
   }
 
+  /**
+   * Metodo para obtener todos los empleados ordenados por fechaCreacion de manera "asc".
+   *
+   * @return {*}  {Observable<any>}
+   * @memberof EmpleadoService
+   */
   getEmpleados(): Observable<any> {
     return this.firestore.collection('empleados', ref => ref.orderBy('fechaCreacion', 'asc')).snapshotChanges();
   }
 
+  /**
+   * Metodo para Eliminar Empleado por su id.
+   *
+   * @param {string} id
+   * @return {*}  {Promise<any>}
+   * @memberof EmpleadoService
+   */
   eliminarEmpleado(id: string): Promise<any> {
     return this.firestore.collection('empleados').doc(id).delete();
   }
 
+  /**
+   * Nos permite obtener un unico Empleado por su id.
+   *
+   * @param {string} id
+   * @return {*}  {Observable<any>}
+   * @memberof EmpleadoService
+   */
   getEmpleado(id: string): Observable<any> {
     return this.firestore.collection('empleados').doc(id).snapshotChanges();
   }
 
+  /**
+   * Actualizamos el registro en BD por su ID.
+   *
+   * @param {string} id
+   * @param {*} data
+   * @return {*}  {Promise<any>}
+   * @memberof EmpleadoService
+   */
   actualizarEmpleado(id: string, data: any): Promise<any> {
     return this.firestore.collection('empleados').doc(id).update(data);
   }
@@ -63,8 +90,7 @@ export class EmpleadoService {
         finalize(() => {
           fileRef.getDownloadURL().subscribe(urlImage => {
             this.downloadURL = urlImage; // Se guarda la url completa de la imagen en Storage ya en FireBase
-            // this._savePostEmpleado(empleado);
-            sessionStorage.setItem('urlImagenFireBase', urlImage);
+            sessionStorage.setItem('urlImagenFireBase', urlImage); // Setiamos la url para su recuperación
           });
         })
       ).subscribe();

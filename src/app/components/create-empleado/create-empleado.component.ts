@@ -10,14 +10,30 @@ import { EmpleadoService } from 'src/app/services/empleado.service';
   styleUrls: ['./create-empleado.component.css']
 })
 export class CreateEmpleadoComponent implements OnInit {
+  /** Varuable FormGroup para nuestro formulario Reactivo. */
   createEmpleado: FormGroup;
+  /** Bandera para condicionar nuestro template HTML */
   submitted = false;
+  /** Bandera para el efecto del loading... */
   loading = false;
+  /** Variable para almacenar el ID del Empleado */
   id: string | null;
+  /** Variable para condicionar el titulo de la vista. */
   titulo = 'Agregar Empleado';
+  /** Variable para guardar propiedades de la imagen. */
   image: any;
+  /** Obtenemos la url de la Imagen recuperada */
   imageRecuperada: string = '';
 
+  /**
+   * Creates an instance of CreateEmpleadoComponent.
+   * @param {FormBuilder} fb
+   * @param {EmpleadoService} _empleadoService
+   * @param {Router} router
+   * @param {ToastrService} toastr
+   * @param {ActivatedRoute} aRoute
+   * @memberof CreateEmpleadoComponent
+   */
   constructor(private fb: FormBuilder,
     private _empleadoService: EmpleadoService,
     private router: Router,
@@ -31,14 +47,26 @@ export class CreateEmpleadoComponent implements OnInit {
       imagePost: ['', Validators.required],
       estatus: ['', Validators.required],
     })
+    /**  Obtenemos ID del Empleado en base a la Url de nuestra app */
     this.id = this.aRoute.snapshot.paramMap.get('id');
-    console.log(this.id)
   }
 
+  /**
+   * Ciclo de Vida Angular se manda a llamar metodo para realizar la evaluación.
+   *
+   * @memberof CreateEmpleadoComponent
+   */
   ngOnInit(): void {
     this.esEditar();
   }
 
+  /**
+   * Metodo para evaluar si sera un Nuevo Empleado o
+   * Edición del empleado.
+   *
+   * @return {*} 
+   * @memberof CreateEmpleadoComponent
+   */
   agregarEditarEmpleado() {
     this.submitted = true;
 
@@ -54,6 +82,11 @@ export class CreateEmpleadoComponent implements OnInit {
 
   }
 
+  /**
+   * Metodo para guardar el Empleado en BD.
+   *
+   * @memberof CreateEmpleadoComponent
+   */
   agregarEmpleado() {
     this.loading = true;
     this._empleadoService.uploadImage(this.image);
@@ -68,7 +101,6 @@ export class CreateEmpleadoComponent implements OnInit {
         fechaCreacion: new Date(),
         fechaActualizacion: new Date()
       }
-      console.log('Cual es el empleado agregar: ', empleado);
       this._empleadoService.agregarEmpleado(empleado).then(() => {
         this.toastr.success('El empleado fue registrado con exito!', 'Empleado Registrado', {
           positionClass: 'toast-bottom-right'
@@ -80,11 +112,17 @@ export class CreateEmpleadoComponent implements OnInit {
         console.log(error);
         this.loading = false;
       })
-    }, 2000);
+    }, 2500);
   }
 
+  /**
+   * Metodo para recuperar el Empleado y volver a consumir servicio
+   * para la actualización de sus datos en BD Firebase. 
+   *
+   * @param {string} id
+   * @memberof CreateEmpleadoComponent
+   */
   editarEmpleado(id: string) {
-
     const empleado: any = {
       nombre: this.createEmpleado.value.nombre,
       apellido: this.createEmpleado.value.apellido,
@@ -105,7 +143,11 @@ export class CreateEmpleadoComponent implements OnInit {
     })
   }
 
-
+  /**
+   * Metodo para evaluar si la vista es para Agregar o Editar.
+   *
+   * @memberof CreateEmpleadoComponent
+   */
   esEditar() {
     this.id === null ? this.titulo = 'Agregar Empleado' : this.titulo = 'Editar Empleado'
     if (this.id !== null) {
@@ -126,10 +168,14 @@ export class CreateEmpleadoComponent implements OnInit {
     }
   }
 
+  /**
+   * Metodo para seleccionar la imagen y recuperar sus propiedades.
+   *
+   * @param {*} event
+   * @memberof CreateEmpleadoComponent
+   */
   selectFile(event: any): void {
     this.image = event.target.files[0];
-    console.log('this image: ', this.image);
-
   }
 
 }

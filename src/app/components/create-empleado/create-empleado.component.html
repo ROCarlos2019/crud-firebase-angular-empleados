@@ -13,6 +13,7 @@
                     <form class="mt-4" [formGroup]="createEmpleado" (ngSubmit)="agregarEditarEmpleado()">
                         <div class="row">
                             <div class="col" *ngIf="titulo === 'Agregar Empleado' ">
+                                <span class="text-left">Se recomienda una imagen menor a 150 KB...</span>
                                 <h6 class="text-left">Subir Imagen/Foto</h6>
                                 <input type="file" formControlName="imagePost" class="text-nowrap text-truncate"
                                     (change)="selectFile($event)" id="btnFile" />
