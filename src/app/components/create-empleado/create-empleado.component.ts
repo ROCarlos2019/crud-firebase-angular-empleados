@@ -1,8 +1,12 @@
 import { Component, OnInit } from '@angular/core';
+import { AngularFireStorage } from '@angular/fire/storage';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { EmpleadoService } from 'src/app/services/empleado.service';
+import { Observable } from 'rxjs';
+import { finalize } from 'rxjs/operators';
+import { FileI } from '../../models/file.interface';
+import { EmpleadoService } from '../../services/empleado.service';
 
 @Component({
   selector: 'app-create-empleado',
@@ -25,6 +29,11 @@ export class CreateEmpleadoComponent implements OnInit {
   /** Obtenemos la url de la Imagen recuperada */
   imageRecuperada: string = '';
 
+  /** Variable para obtener el path de la ruta relativa en Storage de Firebase */
+  private filePath: any;
+  /** Variable para almacenar URL image.*/
+  private downloadURL: Observable<string> | undefined;
+
   /**
    * Creates an instance of CreateEmpleadoComponent.
    * @param {FormBuilder} fb
@@ -38,7 +47,8 @@ export class CreateEmpleadoComponent implements OnInit {
     private _empleadoService: EmpleadoService,
     private router: Router,
     private toastr: ToastrService,
-    private aRoute: ActivatedRoute) {
+    private aRoute: ActivatedRoute,
+    private storage: AngularFireStorage) {
     this.createEmpleado = this.fb.group({
       nombre: ['', Validators.required],
       apellido: ['', Validators.required],
@@ -89,30 +99,62 @@ export class CreateEmpleadoComponent implements OnInit {
    */
   agregarEmpleado() {
     this.loading = true;
-    this._empleadoService.uploadImage(this.image);
-    setTimeout(() => {
-      const empleado: any = {
-        nombre: this.createEmpleado.value.nombre,
-        apellido: this.createEmpleado.value.apellido,
-        documento: this.createEmpleado.value.documento,
-        salario: this.createEmpleado.value.salario,
-        imagePost: sessionStorage.getItem('urlImagenFireBase') || null,
-        estatus: this.createEmpleado.value.estatus,
-        fechaCreacion: new Date(),
-        fechaActualizacion: new Date()
-      }
-      this._empleadoService.agregarEmpleado(empleado).then(() => {
-        this.toastr.success('El empleado fue registrado con exito!', 'Empleado Registrado', {
-          positionClass: 'toast-bottom-right'
-        });
-        this.loading = false;
-        sessionStorage.clear(); // Se borra la SessionStorage
-        this.router.navigate(['/list-empleados']);
-      }).catch(error => {
-        console.log(error);
-        this.loading = false;
-      })
-    }, 2500);
+    this._uploadImage(this.image);
+  }
+
+  /**
+   * Metodo privado para el consumo del servicio getDownloadURL de AngularFireStorageReference
+   * obtenemos la url completa del Storage en Firebase.
+   * Posterior mandamos a guardar los datos en la BD.
+   *
+   * @private
+   * @param {FileI} image
+   * @memberof CreateEmpleadoComponent
+   */
+  private _uploadImage(image: FileI) {
+    this.filePath = `images/${image.name}`;
+    const fileRef = this.storage.ref(this.filePath);
+    const task = this.storage.upload(this.filePath, image);
+    task.snapshotChanges()
+      .pipe(
+        finalize(() => {
+          fileRef.getDownloadURL().subscribe(urlImage => {
+            this.downloadURL = urlImage; // Se guarda la url completa de la imagen en Storage ya en FireBase
+            sessionStorage.setItem('urlImagenFireBase', urlImage); // Setiamos la url para su recuperación
+            this._guardarEmpleadoBD();
+          });
+        })
+      ).subscribe();
+  }
+
+  /**
+   * Metodo privado para registrar el empleado sus datos en BD.
+   *
+   * @private
+   * @memberof CreateEmpleadoComponent
+   */
+  private _guardarEmpleadoBD() {
+    const empleado: any = {
+      nombre: this.createEmpleado.value.nombre,
+      apellido: this.createEmpleado.value.apellido,
+      documento: this.createEmpleado.value.documento,
+      salario: this.createEmpleado.value.salario,
+      imagePost: sessionStorage.getItem('urlImagenFireBase') || null,
+      estatus: this.createEmpleado.value.estatus,
+      fechaCreacion: new Date(),
+      fechaActualizacion: new Date()
+    }
+    this._empleadoService.agregarEmpleado(empleado).then(() => {
+      this.toastr.success('El empleado fue registrado con exito!', 'Empleado Registrado', {
+        positionClass: 'toast-bottom-right'
+      });
+      this.loading = false;
+      sessionStorage.clear(); // Se borra la SessionStorage
+      this.router.navigate(['/list-empleados']);
+    }).catch(error => {
+      console.log(error);
+      this.loading = false;
+    });
   }
 
   /**

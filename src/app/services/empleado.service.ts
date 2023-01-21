@@ -2,18 +2,11 @@ import { Injectable } from '@angular/core';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireStorage } from '@angular/fire/storage';
 import { Observable } from 'rxjs';
-import { finalize } from 'rxjs/operators';
-import { FileI } from '../models/file.interface';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EmpleadoService {
-
-  /** Variable para obtener el path de la ruta relativa en Storage de Firebase */
-  private filePath: any;
-  /** Variable para almacenar URL image.*/
-  private downloadURL: Observable<string> | undefined;
 
   /**
    * Creates an instance of EmpleadoService.
@@ -21,8 +14,7 @@ export class EmpleadoService {
    * @param {AngularFireStorage} storage
    * @memberof EmpleadoService
    */
-  constructor(private firestore: AngularFirestore,
-    private storage: AngularFireStorage) {
+  constructor(private firestore: AngularFirestore) {
   }
 
   /**
@@ -79,21 +71,6 @@ export class EmpleadoService {
    */
   actualizarEmpleado(id: string, data: any): Promise<any> {
     return this.firestore.collection('empleados').doc(id).update(data);
-  }
-
-  public uploadImage(image: FileI) {
-    this.filePath = `images/${image.name}`;
-    const fileRef = this.storage.ref(this.filePath);
-    const task = this.storage.upload(this.filePath, image);
-    task.snapshotChanges()
-      .pipe(
-        finalize(() => {
-          fileRef.getDownloadURL().subscribe(urlImage => {
-            this.downloadURL = urlImage; // Se guarda la url completa de la imagen en Storage ya en FireBase
-            sessionStorage.setItem('urlImagenFireBase', urlImage); // Setiamos la url para su recuperación
-          });
-        })
-      ).subscribe();
   }
 
 }
